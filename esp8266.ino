@@ -11,7 +11,7 @@
 ESP8266WebServer server(80);
 
 //ESP AP Mode configuration
-const char *ssid = "N300";
+const char *ssid = "Honor-8";
 const char *password = "12345678";
 
 const int thermoDO = 12;
@@ -19,7 +19,7 @@ const int thermoCS = 13;
 const int thermoCLK = 14;
 
 MAX6675 thermocouple(thermoCLK, thermoCS, thermoDO);
-HTTPClient http;
+float current_temp;
 
 void handleRoot(){
   server.sendHeader("Location", "/index.html", true);
@@ -66,6 +66,13 @@ void setup() {
   Serial.println("\r\n");
   server.onNotFound(handleWebRequests); //Set setver all paths are not found so we can handle as per URI
   server.on("/", handleRoot);
+  server.on("/temp", HTTP_GET, []() {
+    String json = "{";
+    json += "\"current_temp\":" + String(current_temp);
+    json += "}";
+    server.send(200, "text/json", json);
+    json = String();
+  });
   server.begin();
   Serial.println("Webserver started..."); // Start the webserver
   Serial.print("\n");
@@ -80,23 +87,11 @@ void loop() {
       Serial.println("Failed to read temprature from esp-sensor");
       return;
     }
+    current_temp = DC;
     Serial.print("C = "); 
-    Serial.print(DC);
+    Serial.print(current_temp);
     Serial.print("\n");
-    Serial.print(WiFi.localIP().toString());
-    http.begin("http://"+ WiFi.localIP().toString() +"/index.html");
-    
-    int httpCode = http.GET();
-    if (httpCode > 0) {
-      Serial.printf("[HTTP] GET... code: %d\n", httpCode);
-      
-      // file found at server
-      if (httpCode == HTTP_CODE_OK) {
-        http.writeToStream(&Serial);
-      }
-      http.end();
-    }
-    delay(1000);
+    delay(500);
   }
 }
 
